@@ -1,2 +1,1 @@
-I am emulating a custom computer in Java!
-Then I will be writing a BIOS, bootloader, operating system, and some programs because I like self-inflicted pain. Horray!
+I will be making my own OS-ish thing. More like a "simulated desktop environment", but whatever.
