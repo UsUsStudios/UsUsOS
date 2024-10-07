@@ -114,10 +114,9 @@ class Screen extends JPanel implements ActionListener, KeyListener {
             String username = getUserInput("Welcome to UsUsOS. Please enter your username. ");
             String password = getUserInput("\nPlease enter your password. ");
             
-            this.text += "\nThank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.";
-
-            System.out.println("'" + username + "'");
-            System.out.println("'" + password + "'");
+            echo("Thank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.");
+            echo("Your username is: '" + username + "'");
+            echo("Your password is: '" + password + "'");
         }).start();
         
     }
@@ -194,5 +193,9 @@ class Screen extends JPanel implements ActionListener, KeyListener {
         this.submittedText = "";
 
         return input;
+    }
+
+    public void echo(String text) {
+        this.text += "\n" + text;
     }
 }
