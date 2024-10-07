@@ -3,10 +3,13 @@ import java.awt.event.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Scanner;
@@ -30,6 +33,18 @@ public class Computer {
         screen.startUp();
 
         return frame;
+    }
+
+    public static boolean checkVersionNumber() throws FileNotFoundException {
+        File file = new File("src\\version.txt");
+        String versionNumber;
+        try (Scanner reader = new Scanner(file)) {
+            versionNumber = reader.next();
+        }
+
+        String cloudVersionNumber = VersionFetcher.getVersionNumber();
+
+        return versionNumber.equals(cloudVersionNumber);
     }
 
     public static void initStorage() throws IOException, ClassNotFoundException, IOException {
@@ -85,6 +100,7 @@ class Screen extends JPanel implements ActionListener, KeyListener {
     int width;
     int height;
     boolean isAccepting;
+    boolean isLatestVersion;
 
     Screen(int width, int height) throws IOException {
         this.width = width;
@@ -94,6 +110,7 @@ class Screen extends JPanel implements ActionListener, KeyListener {
         this.text = "";
         this.submittedText = "";
         this.isAccepting = false;
+        this.isLatestVersion = Computer.checkVersionNumber();
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -110,14 +127,28 @@ class Screen extends JPanel implements ActionListener, KeyListener {
     }
 
     public void startUp() {
-        new Thread(() -> {
-            String username = getUserInput("Welcome to UsUsOS. Please enter your username. ");
-            String password = getUserInput("\nPlease enter your password. ");
-            
-            echo("Thank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.");
-            echo("Your username is: '" + username + "'");
-            echo("Your password is: '" + password + "'");
-        }).start();
+        if (this.isLatestVersion) {
+            new Thread(() -> {
+                String username = getUserInput("Welcome to UsUsOS. Please enter your username. ");
+                String password = getUserInput("\nPlease enter your password. ");
+
+                echo("Thank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.");
+                echo("Your username is: '" + username + "'");
+                echo("Your password is: '" + password + "'");
+            }).start();
+        } else {
+            getUserInput("There is a new version of UsUsOS available. Please download at https://github.com/UsUsStudios/UsUsOS.");
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    // Create a URI object from the URL string
+                    URI uri = new URI("https://github.com/UsUsStudios/UsUsOS");
+                    
+                    // Get the Desktop instance and open the URL
+                    Desktop desktop = Desktop.getDesktop();
+                    desktop.browse(uri);
+                } catch (URISyntaxException e) {} catch (IOException e) {}
+            } else {}
+        }
         
     }
 
