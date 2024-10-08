@@ -28,6 +28,7 @@ public class Computer {
 
         Screen screen = new Screen(830, 830);
         frame.add(screen);
+        frame.pack();
 
         screen.requestFocus();
         screen.startUp();
@@ -39,12 +40,12 @@ public class Computer {
         File file = new File("src\\version.txt");
         String versionNumber;
         try (Scanner reader = new Scanner(file)) {
-            versionNumber = reader.next();
+            versionNumber = reader.next() + "\n";
         }
 
         String cloudVersionNumber = VersionFetcher.getVersionNumber();
 
-        return versionNumber.equals(cloudVersionNumber);
+        return ((versionNumber).equals(cloudVersionNumber));
     }
 
     public static void initStorage() throws IOException, ClassNotFoundException, IOException {
@@ -120,10 +121,9 @@ class Screen extends JPanel implements ActionListener, KeyListener {
                 }
             }
         });
-        Timer timer = new Timer(0, (ActionEvent e) -> {
+        new Timer(100, (ActionEvent e) -> {
             repaint();
-        });
-        timer.start();
+        }).start();
     }
 
     public void startUp() {
@@ -132,24 +132,27 @@ class Screen extends JPanel implements ActionListener, KeyListener {
                 String username = getUserInput("Welcome to UsUsOS. Please enter your username. ");
                 String password = getUserInput("\nPlease enter your password. ");
 
-                echo("Thank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.");
-                echo("Your username is: '" + username + "'");
-                echo("Your password is: '" + password + "'");
+                echo("\nThank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.");
+                echo("\nYour username is: '" + username + "'");
+                echo("\nYour password is: '" + password + "'");
             }).start();
         } else {
-            getUserInput("There is a new version of UsUsOS available. Please download at https://github.com/UsUsStudios/UsUsOS.");
-            if (Desktop.isDesktopSupported()) {
-                try {
-                    // Create a URI object from the URL string
-                    URI uri = new URI("https://github.com/UsUsStudios/UsUsOS");
-                    
-                    // Get the Desktop instance and open the URL
-                    Desktop desktop = Desktop.getDesktop();
-                    desktop.browse(uri);
-                } catch (URISyntaxException e) {} catch (IOException e) {}
-            } else {}
-        }
-        
+            new Thread(() -> {
+                echo("There is a new version of UsUsOS available. Please download at https://github.com/UsUsStudios/UsUsOS.");
+                if (Desktop.isDesktopSupported()) {
+                    try {
+                        URI uri = new URI("https://github.com/UsUsStudios/UsUsOS");
+                        
+                        Desktop desktop = Desktop.getDesktop();
+                        desktop.browse(uri);
+                    } catch (IOException | URISyntaxException e) {
+                        System.err.println(e.getMessage());
+                    }
+                } else {
+                    System.out.println("Desktop not supported.");
+                }
+            }).start();    
+        }   
     }
 
     @Override
@@ -227,6 +230,6 @@ class Screen extends JPanel implements ActionListener, KeyListener {
     }
 
     public void echo(String text) {
-        this.text += "\n" + text;
+        this.text += text;
     }
 }

@@ -1,6 +1,9 @@
+import javax.swing.JFrame;
+
 public class Main {
     public static void main(String[] args) throws Exception {
-        Computer.initScreen();
+        @SuppressWarnings("unused")
+        JFrame frame = Computer.initScreen();
         // Computer.initStorage();
     }
 }

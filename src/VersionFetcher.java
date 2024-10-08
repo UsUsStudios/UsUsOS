@@ -9,28 +9,25 @@ public class VersionFetcher {
         String owner = "UsUsStudios";
         String repo = "UsUsOS";
         String path = "build/version.txt";
-        String token = "";
 
         String versionNumber = "1.0";
 
         try {
-            versionNumber = getFileContent(owner, repo, path, token);
+            versionNumber = getFileContent(owner, repo, path);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
 
         return versionNumber;
     }
 
-    private static String getFileContent(String owner, String repo, String path, String token) throws Exception {
+    private static String getFileContent(String owner, String repo, String path) throws Exception {
         String url = "https://api.github.com/repos/" + owner + "/" + repo + "/contents/" + path;
 
+        @SuppressWarnings("deprecation")
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Accept", "application/vnd.github.v3.raw");
-        if (token != null && !token.isEmpty()) {
-            connection.setRequestProperty("Authorization", "token " + token);
-        }
 
         if (connection.getResponseCode() != 200) {
             throw new RuntimeException("Failed : HTTP error code : " + connection.getResponseCode());
