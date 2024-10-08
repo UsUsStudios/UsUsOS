@@ -37,7 +37,7 @@ public class Computer {
     }
 
     public static boolean checkVersionNumber() throws FileNotFoundException {
-        File file = new File("src\\version.txt");
+        File file = new File("version.txt");
         String versionNumber;
         try (Scanner reader = new Scanner(file)) {
             versionNumber = reader.next() + "\n";
@@ -149,7 +149,7 @@ class Screen extends JPanel implements ActionListener, KeyListener {
                         System.err.println(e.getMessage());
                     }
                 } else {
-                    System.out.println("Desktop not supported.");
+                    echo("\nDesktop not supported.");;
                 }
             }).start();    
         }   
