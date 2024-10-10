@@ -147,11 +147,12 @@ class OS extends JPanel implements ActionListener, KeyListener {
                     try {
                         String password = "";
                         HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFile("userdata.sys").data);
-                        System.out.println(userData.get("Password"));
-                        while (password.equals(userData.get("Password"))) {
-                            password = getUserInput("Hello, " + userData.get("Username") + ". Please enter your password: ");
+                        echo("Hello, " + userData.get("Username") + ".");
+                        while (!userData.get("Password").equals(password)) {
+                            System.out.println(userData.get("Password").equals(password));
+                            password = getUserInput("\nPlease enter your password: ");
                         }
-                        echo("You have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
+                        echo("\nYou have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
                     } catch (Exception e) {
                         echo("\nAn error occured. Please try again. If the error persists, please get help from the creator.\nError: " + e.getMessage());
                     }
