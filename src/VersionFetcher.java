@@ -8,7 +8,7 @@ public class VersionFetcher {
     public static String getVersionNumber() {
         String owner = "UsUsStudios";
         String repo = "UsUsOS";
-        String path = "build/version.txt";
+        String path = "ususos/version.txt";
 
         String versionNumber = "1.0";
 

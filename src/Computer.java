@@ -153,8 +153,8 @@ class OS extends JPanel implements ActionListener, KeyListener {
                             password = getUserInput("\nPlease enter your password: ");
                         }
                         echo("\nYou have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
-                    } catch (Exception e) {
-                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + e.getMessage());
+                    } catch (IOException | ClassNotFoundException e) {
+                        echo(e.getMessage() + "\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: ");
                     }
                 }
             }).start();
