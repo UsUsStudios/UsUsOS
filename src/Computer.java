@@ -141,7 +141,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         echo("\nStorage complete! Please restart.");
                         Computer.saveDir(mainDir);
                     } catch (IOException ex) {
-                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator.\nError: " + ex.getMessage());
+                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + ex.getMessage());
                     }
                 } else {
                     try {
@@ -154,7 +154,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         }
                         echo("\nYou have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
                     } catch (Exception e) {
-                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator.\nError: " + e.getMessage());
+                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + e.getMessage());
                     }
                 }
             }).start();
