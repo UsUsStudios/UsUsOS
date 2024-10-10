@@ -16,8 +16,40 @@ public class Directory implements Serializable {
         }
     }
 
+    public Directory getDir(String name) {
+        for (Object object : dir) {
+            if (object instanceof Directory directory) {
+                if (directory.dirName.equals(name)) {
+                    return directory;
+                }
+            }
+        }
+
+        return new Directory("null");
+    }
+
+    public ComFile getFile(String name) {
+        for (Object object : dir) {
+            if (object instanceof ComFile file) {
+                if ((file.fileName + "." + file.fileExtension).equals(name)) {
+                    return file;
+                }
+            }
+        }
+
+        return new ComFile("null", "null", new ArrayList<>());
+    }
+
     @Override
     public String toString() {
-        return this.dirName + ": " + this.dir;
+        return "'" + this.dirName + "': " + this.dir;
+    }
+
+    public boolean isEmpty() {
+        return this.dir.isEmpty();
+    }
+
+    public boolean isNullDir() {
+        return this.dir.isEmpty() && this.dirName.equals("null");
     }
 }

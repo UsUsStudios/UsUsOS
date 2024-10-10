@@ -12,13 +12,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class Computer {
-    public static JFrame initScreen() throws IOException {
+    public static JFrame init() throws IOException, ClassNotFoundException {
         JFrame frame = new JFrame("UsUsOS");
         frame.setVisible(true);
         frame.setSize(830, 830);
@@ -26,18 +28,17 @@ public class Computer {
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        Screen screen = new Screen(830, 830);
-        frame.add(screen);
+        OS os = new OS(830, 830, frame);
         frame.pack();
 
-        screen.requestFocus();
-        screen.startUp();
+        os.requestFocus();
+        os.startUp();
 
         return frame;
     }
 
     public static boolean checkVersionNumber() throws FileNotFoundException {
-        File file = new File("version.txt");
+        File file = new File("ususos/version.txt");
         String versionNumber;
         try (Scanner reader = new Scanner(file)) {
             versionNumber = reader.next() + "\n";
@@ -47,21 +48,8 @@ public class Computer {
 
         return ((versionNumber).equals(cloudVersionNumber));
     }
-
-    public static void initStorage() throws IOException, ClassNotFoundException, IOException {
-        Directory mainDir = new Directory("C:");
-        mainDir.add(new Directory("Hello"));
-        mainDir.add(new ComFile("Hi", new ArrayList<>()));
-        mainDir.add(new ComFile("Hey there dummies", new ArrayList<>()));
-
-        saveDir(mainDir);
-
-        Directory storageDecoded = loadDir();
-        
-        System.out.println(storageDecoded);
-    }
-
-    private static void saveDir(Directory mainDir) throws IOException {
+    
+    public static void saveDir(Directory mainDir) throws IOException {
         // Serialize
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -69,15 +57,15 @@ public class Computer {
         oos.flush();
         
         // Write to file
-        try (FileWriter writer = new FileWriter("storage.txt")) {
+        try (FileWriter writer = new FileWriter("ususos/storage.txt")) {
             byte[] byteArray = bos.toByteArray();
             writer.write(Base64.getEncoder().encodeToString(byteArray));
         }
     }
 
-    private static Directory loadDir() throws IOException, ClassNotFoundException {
+    public static Directory loadDir() throws IOException, ClassNotFoundException {
         // Read File
-        File file = new File("storage.txt");
+        File file = new File("ususos/storage.txt");
         String storageString;
         try (Scanner reader = new Scanner(file)) {
             storageString = "";
@@ -95,23 +83,38 @@ public class Computer {
     }
 }
 
-class Screen extends JPanel implements ActionListener, KeyListener {
+class OS extends JPanel implements ActionListener, KeyListener {
     String text;
     String submittedText;
     int width;
     int height;
     boolean isAccepting;
     boolean isLatestVersion;
+    Directory mainDir;
+    int mode;
 
-    Screen(int width, int height) throws IOException {
+    OS(int width, int height, JFrame frame) throws IOException, ClassNotFoundException {
+        frame.add(this);
         this.width = width;
         this.height = height;
         setPreferredSize(new Dimension(this.width, this.height));
         setBackground(Color.BLACK);
-        this.text = "";
+
+        this.text = "Starting boot process";
         this.submittedText = "";
         this.isAccepting = false;
+        this.mode = 0;
+        
+        new Timer(100, (ActionEvent e) -> {
+            repaint();
+        }).start();
+
+        this.text = "Checking version";
         this.isLatestVersion = Computer.checkVersionNumber();
+        this.text = "Loading storage";
+        this.mainDir = Computer.loadDir();
+        this.text = "";
+
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -121,20 +124,38 @@ class Screen extends JPanel implements ActionListener, KeyListener {
                 }
             }
         });
-        new Timer(100, (ActionEvent e) -> {
-            repaint();
-        }).start();
     }
 
-    public void startUp() {
+    public void startUp() throws IOException, ClassNotFoundException {
         if (this.isLatestVersion) {
             new Thread(() -> {
-                String username = getUserInput("Welcome to UsUsOS. Please enter your username. ");
-                String password = getUserInput("\nPlease enter your password. ");
-
-                echo("\nThank you for signing in. Unfortunately, this is all there is to your UsUsOS experience at the moment.");
-                echo("\nYour username is: '" + username + "'");
-                echo("\nYour password is: '" + password + "'");
+                if (this.mainDir.isNullDir() || this.mainDir.isEmpty()) {
+                    try {
+                        echo("Welcome to UsUsOS! Let's get you set up.");
+                        Map<String, String> userData = new HashMap<>();
+                        userData.put("Username", getUserInput("\nEnter your username: "));
+                        userData.put("Password", getUserInput("\nEnter your password: "));
+                        echo("\nSetting up your storage. Please wait a moment.");
+                        ArrayList<Byte> userDataBytes = Utils.mapToByteArray(userData);
+                        this.mainDir.add(new ComFile("userdata", "sys", userDataBytes));
+                        echo("\nStorage complete! Please restart.");
+                        Computer.saveDir(mainDir);
+                    } catch (IOException ex) {
+                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator.\nError: " + ex.getMessage());
+                    }
+                } else {
+                    try {
+                        String password = "";
+                        HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFile("userdata.sys").data);
+                        System.out.println(userData.get("Password"));
+                        while (password.equals(userData.get("Password"))) {
+                            password = getUserInput("Hello, " + userData.get("Username") + ". Please enter your password: ");
+                        }
+                        echo("You have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
+                    } catch (Exception e) {
+                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator.\nError: " + e.getMessage());
+                    }
+                }
             }).start();
         } else {
             new Thread(() -> {
@@ -149,7 +170,7 @@ class Screen extends JPanel implements ActionListener, KeyListener {
                         System.err.println(e.getMessage());
                     }
                 } else {
-                    echo("\nDesktop not supported.");;
+                    echo("\nDesktop not supported.");
                 }
             }).start();    
         }   
@@ -162,6 +183,13 @@ class Screen extends JPanel implements ActionListener, KeyListener {
     }
 
     public void draw(Graphics g) {
+        switch (this.mode) {
+            case 0 -> drawCommandPrompt(g);
+            case 1 -> drawDeskop(g);
+        }
+    }
+
+    private void drawCommandPrompt(Graphics g) {
         g.setColor(Color.WHITE);
         Font font = new Font("Monospaced", 1, 16);
         g.setFont(font);
@@ -192,6 +220,10 @@ class Screen extends JPanel implements ActionListener, KeyListener {
                 }
             }
         }
+    }
+
+    private static void drawDeskop(Graphics g) {
+
     }
 
     @Override
