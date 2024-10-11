@@ -171,9 +171,8 @@ class OS extends JPanel implements ActionListener, KeyListener {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (isAccepting) {
-                    text += e.getKeyChar();
                     submittedText += e.getKeyChar();
-                    // processKey(e.getKeyCode());
+                    processKey(e.getKeyCode());
                 }
             }
         });
@@ -191,8 +190,9 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         echo("\nSetting up your storage. Please wait a moment.");
                         ArrayList<Byte> userDataBytes = Utils.mapToByteArray(userData);
                         this.mainDir.add(new ComFile("userdata", "sys", userDataBytes));
-                        getUserInput("\nStorage complete! Press enter to continue to home screen.");
                         Computer.saveDir(mainDir);
+                        getUserInput("\nStorage complete! Press enter to continue to home screen.");
+                        this.mode = 1;
                     } catch (IOException ex) {
                         echo("\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + ex.getMessage());
                     }
@@ -204,7 +204,8 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         while (!userData.get("Password").equals(password)) {
                             password = getUserInput("\nIncorrect password. Please enter your password: ");
                         }
-                        echo("\nYou have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
+                        echo("\nYou have succesfully signed in. Entering desktop mode...");
+                        this.mode = 1;
                     } catch (IOException | ClassNotFoundException e) {
                         echo(e.getMessage() + "\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: ");
                     }
@@ -242,13 +243,13 @@ class OS extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    /*
     private void processKey(int keyCode) {
         if (keyCode == KeyEvent.VK_BACK_SPACE) {
-            this.text = this.text.substring(0, this.text.length() - 1);
-            this.submittedText = this.submittedText.substring(0, this.submittedText.length() - 1);
+            try {
+                this.submittedText = this.submittedText.substring(0, this.submittedText.length() - 2);
+            } catch (StringIndexOutOfBoundsException e) {}
         }
-    } */
+    }
 
     private void drawCommandPrompt(Graphics g) {
         g.setColor(Color.WHITE);
@@ -256,8 +257,9 @@ class OS extends JPanel implements ActionListener, KeyListener {
         g.setFont(font);
         int col = 0;
         int ln = 1;
-        for (int i = 0; i < this.text.length(); i++) {
-            char ch = this.text.charAt(i);
+        String textToPrint = this.text + this.submittedText;
+        for (int i = 0; i < textToPrint.length(); i++) {
+            char ch = textToPrint.charAt(i);
             if (col * 10 + 5 > this.width - 10) {
                 col = 0;
                 ln++;
@@ -268,7 +270,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
             } else {
                 switch (ch) {
                     case '\n' -> {
-                        if (i == this.text.length() - 1) {
+                        if (i == textToPrint.length() - 1) {
                             this.isAccepting = false;
                         } else {
                             col = 0;
@@ -284,7 +286,10 @@ class OS extends JPanel implements ActionListener, KeyListener {
     }
 
     private static void drawDeskop(Graphics g) {
-
+        g.setColor(Color.WHITE);
+        Font font = new Font("Monospaced", 1, 16);
+        g.setFont(font);
+        g.drawString("This is desktop mode.", 0, 16);
     }
 
     @Override
