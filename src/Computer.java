@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -39,27 +40,14 @@ public class Computer {
     }
 
     public static boolean checkVersionNumber() throws FileNotFoundException {
-        if (Utils.checkJAR()) {
-            File file = new File(System.getProperty("user.dir") + "/version.txt");
-            String versionNumber;
-            try (Scanner reader = new Scanner(file)) {
-                versionNumber = reader.next() + "\n";
-            }
-
-            String cloudVersionNumber = VersionFetcher.getVersionNumber();
-
-            return ((versionNumber).equals(cloudVersionNumber));
-        } else {
-            File file = new File(System.getProperty("user.dir") + "/ususos/version.txt");
-            String versionNumber;
-            try (Scanner reader = new Scanner(file)) {
-                versionNumber = reader.next() + "\n";
-            }
-
-            String cloudVersionNumber = VersionFetcher.getVersionNumber();
-
-            return ((versionNumber).equals(cloudVersionNumber));
+        String versionNumber;
+        try (Scanner reader = new Scanner(new File(Utils.getPath("version.txt")))) {
+            versionNumber = reader.next() + "\n";
         }
+
+       String cloudVersionNumber = VersionFetcher.getVersionNumber();
+
+       return (versionNumber.equals(cloudVersionNumber));
     }
     
     public static void saveDir(Directory mainDir) throws IOException {
@@ -70,67 +58,33 @@ public class Computer {
         oos.flush();
         
         // Write to file
-        if (Utils.checkJAR()) {
-            String filepath = System.getProperty("user.dir") + "/storage.txt";
-            try (FileWriter writer = new FileWriter(filepath)) {
-                byte[] byteArray = bos.toByteArray();
-                writer.write(Base64.getEncoder().encodeToString(byteArray));
-            }
-        } else {
-            String filepath = System.getProperty("user.dir") + "/ususos/storage.txt";
-            try (FileWriter writer = new FileWriter(filepath)) {
-                byte[] byteArray = bos.toByteArray();
-                writer.write(Base64.getEncoder().encodeToString(byteArray));
-            }
+        try (FileWriter writer = new FileWriter(Utils.getPath("storage.txt"))) {
+            byte[] byteArray = bos.toByteArray();
+            writer.write(Base64.getEncoder().encodeToString(byteArray));
         }
     }
 
     public static Directory loadDir() throws IOException, ClassNotFoundException {
         // Read File
-        if (Utils.checkJAR()) {
-            String filepath = System.getProperty("user.dir") + "/storage.txt";
-            File file = new File(filepath);
-            String storageString;
-            try (Scanner reader = new Scanner(file)) {
-                storageString = "";
-                while (reader.hasNextLine()) {
-                    storageString += reader.next();
-                }
+        File file = new File(Utils.getPath("storage.txt"));
+        String storageString;
+        try (Scanner reader = new Scanner(file)) {
+            storageString = "";
+            while (reader.hasNextLine()) {
+                storageString += reader.next();
             }
+        }
 
-            // Deserialize
-            try {
-                byte[] decodedBytes = Base64.getDecoder().decode(storageString);
-                ByteArrayInputStream newBos = new ByteArrayInputStream(decodedBytes);
-                ObjectInputStream ois = new ObjectInputStream(newBos);            
-                return (Directory) ois.readObject();
-            } catch (EOFException e) {
-                Directory mainDir = new Directory("C:");
-                saveDir(mainDir);
-                return mainDir;
-            }
-        } else {
-            String filepath = System.getProperty("user.dir") + "/ususos/storage.txt";
-            File file = new File(filepath);
-            String storageString;
-            try (Scanner reader = new Scanner(file)) {
-                storageString = "";
-                while (reader.hasNextLine()) {
-                    storageString += reader.next();
-                }
-            }
-
-            // Deserialize
-            try {
-                byte[] decodedBytes = Base64.getDecoder().decode(storageString);
-                ByteArrayInputStream newBos = new ByteArrayInputStream(decodedBytes);
-                ObjectInputStream ois = new ObjectInputStream(newBos);            
-                return (Directory) ois.readObject();
-            } catch (EOFException e) {
-                Directory mainDir = new Directory("C:");
-                saveDir(mainDir);
-                return mainDir;
-            }
+        // Deserialize
+        try {
+            byte[] decodedBytes = Base64.getDecoder().decode(storageString);
+            ByteArrayInputStream newBos = new ByteArrayInputStream(decodedBytes);
+            ObjectInputStream ois = new ObjectInputStream(newBos);            
+            return (Directory) ois.readObject();
+        } catch (EOFException e) {
+            Directory mainDir = new Directory("C:");
+            saveDir(mainDir);
+            return mainDir;
         }
     }
 }
@@ -286,10 +240,11 @@ class OS extends JPanel implements ActionListener, KeyListener {
     }
 
     private static void drawDeskop(Graphics g) {
-        g.setColor(Color.WHITE);
-        Font font = new Font("Monospaced", 1, 16);
-        g.setFont(font);
-        g.drawString("This is desktop mode.", 0, 16);
+        try {
+        File backgroundImg = new File(Utils.getPath("background.png"));
+        Image img = ImageIO.read(backgroundImg).getScaledInstance(1200, 830, Image.SCALE_DEFAULT);
+        g.drawImage(img, -300, 0, null);
+        } catch (IOException e) {}
     }
 
     @Override
@@ -321,6 +276,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         }
         
         String input = this.submittedText.replace("\n", "");
+        this.text = this.text + this.submittedText;
         this.text = this.text.substring(0, this.text.length() - 1);
         this.submittedText = "";
 

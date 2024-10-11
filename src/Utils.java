@@ -34,8 +34,11 @@ public class Utils {
         return map;
     }
 
-    public static boolean checkJAR() {
+    public static String getPath(String filename) {
         String location = Computer.class.getResource("Computer.class").toString();
-        return location.startsWith("jar:");
+        if (location.startsWith("jar:")) {
+            return System.getProperty("user.dir") + "\\" + filename;
+        }
+        return System.getProperty("user.dir") + "\\ususos\\" + filename;
     }
 }
