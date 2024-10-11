@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -38,15 +39,27 @@ public class Computer {
     }
 
     public static boolean checkVersionNumber() throws FileNotFoundException {
-        File file = new File("ususos/version.txt");
-        String versionNumber;
-        try (Scanner reader = new Scanner(file)) {
-            versionNumber = reader.next() + "\n";
+        if (Utils.checkJAR()) {
+            File file = new File(System.getProperty("user.dir") + "/version.txt");
+            String versionNumber;
+            try (Scanner reader = new Scanner(file)) {
+                versionNumber = reader.next() + "\n";
+            }
+
+            String cloudVersionNumber = VersionFetcher.getVersionNumber();
+
+            return ((versionNumber).equals(cloudVersionNumber));
+        } else {
+            File file = new File(System.getProperty("user.dir") + "/ususos/version.txt");
+            String versionNumber;
+            try (Scanner reader = new Scanner(file)) {
+                versionNumber = reader.next() + "\n";
+            }
+
+            String cloudVersionNumber = VersionFetcher.getVersionNumber();
+
+            return ((versionNumber).equals(cloudVersionNumber));
         }
-
-        String cloudVersionNumber = VersionFetcher.getVersionNumber();
-
-        return ((versionNumber).equals(cloudVersionNumber));
     }
     
     public static void saveDir(Directory mainDir) throws IOException {
@@ -57,29 +70,68 @@ public class Computer {
         oos.flush();
         
         // Write to file
-        try (FileWriter writer = new FileWriter("ususos/storage.txt")) {
-            byte[] byteArray = bos.toByteArray();
-            writer.write(Base64.getEncoder().encodeToString(byteArray));
+        if (Utils.checkJAR()) {
+            String filepath = System.getProperty("user.dir") + "/storage.txt";
+            try (FileWriter writer = new FileWriter(filepath)) {
+                byte[] byteArray = bos.toByteArray();
+                writer.write(Base64.getEncoder().encodeToString(byteArray));
+            }
+        } else {
+            String filepath = System.getProperty("user.dir") + "/ususos/storage.txt";
+            try (FileWriter writer = new FileWriter(filepath)) {
+                byte[] byteArray = bos.toByteArray();
+                writer.write(Base64.getEncoder().encodeToString(byteArray));
+            }
         }
     }
 
     public static Directory loadDir() throws IOException, ClassNotFoundException {
         // Read File
-        File file = new File("ususos/storage.txt");
-        String storageString;
-        try (Scanner reader = new Scanner(file)) {
-            storageString = "";
-            while (reader.hasNextLine()) {
-                storageString += reader.next();
+        if (Utils.checkJAR()) {
+            String filepath = System.getProperty("user.dir") + "/storage.txt";
+            File file = new File(filepath);
+            String storageString;
+            try (Scanner reader = new Scanner(file)) {
+                storageString = "";
+                while (reader.hasNextLine()) {
+                    storageString += reader.next();
+                }
+            }
+
+            // Deserialize
+            try {
+                byte[] decodedBytes = Base64.getDecoder().decode(storageString);
+                ByteArrayInputStream newBos = new ByteArrayInputStream(decodedBytes);
+                ObjectInputStream ois = new ObjectInputStream(newBos);            
+                return (Directory) ois.readObject();
+            } catch (EOFException e) {
+                Directory mainDir = new Directory("C:");
+                saveDir(mainDir);
+                return mainDir;
+            }
+        } else {
+            String filepath = System.getProperty("user.dir") + "/ususos/storage.txt";
+            File file = new File(filepath);
+            String storageString;
+            try (Scanner reader = new Scanner(file)) {
+                storageString = "";
+                while (reader.hasNextLine()) {
+                    storageString += reader.next();
+                }
+            }
+
+            // Deserialize
+            try {
+                byte[] decodedBytes = Base64.getDecoder().decode(storageString);
+                ByteArrayInputStream newBos = new ByteArrayInputStream(decodedBytes);
+                ObjectInputStream ois = new ObjectInputStream(newBos);            
+                return (Directory) ois.readObject();
+            } catch (EOFException e) {
+                Directory mainDir = new Directory("C:");
+                saveDir(mainDir);
+                return mainDir;
             }
         }
-
-        // Deserialize
-        byte[] decodedBytes = Base64.getDecoder().decode(storageString);
-        ByteArrayInputStream newBos = new ByteArrayInputStream(decodedBytes);
-        ObjectInputStream ois = new ObjectInputStream(newBos);
-
-        return (Directory) ois.readObject();
     }
 }
 
@@ -121,6 +173,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
                 if (isAccepting) {
                     text += e.getKeyChar();
                     submittedText += e.getKeyChar();
+                    // processKey(e.getKeyCode());
                 }
             }
         });
@@ -138,19 +191,18 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         echo("\nSetting up your storage. Please wait a moment.");
                         ArrayList<Byte> userDataBytes = Utils.mapToByteArray(userData);
                         this.mainDir.add(new ComFile("userdata", "sys", userDataBytes));
-                        echo("\nStorage complete! Please restart.");
+                        getUserInput("\nStorage complete! Press enter to continue to home screen.");
                         Computer.saveDir(mainDir);
                     } catch (IOException ex) {
                         echo("\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + ex.getMessage());
                     }
                 } else {
                     try {
-                        String password = "";
                         HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFile("userdata.sys").data);
                         echo("Hello, " + userData.get("Username") + ".");
+                        String password = getUserInput("\nPlease enter your password: ");
                         while (!userData.get("Password").equals(password)) {
-                            System.out.println(userData.get("Password").equals(password));
-                            password = getUserInput("\nPlease enter your password: ");
+                            password = getUserInput("\nIncorrect password. Please enter your password: ");
                         }
                         echo("\nYou have succesfully signed in. This is your complete UsUsOS experience (at least for now). Make sure to check back often for updates!");
                     } catch (IOException | ClassNotFoundException e) {
@@ -190,6 +242,14 @@ class OS extends JPanel implements ActionListener, KeyListener {
         }
     }
 
+    /*
+    private void processKey(int keyCode) {
+        if (keyCode == KeyEvent.VK_BACK_SPACE) {
+            this.text = this.text.substring(0, this.text.length() - 1);
+            this.submittedText = this.submittedText.substring(0, this.submittedText.length() - 1);
+        }
+    } */
+
     private void drawCommandPrompt(Graphics g) {
         g.setColor(Color.WHITE);
         Font font = new Font("Monospaced", 1, 16);
@@ -198,7 +258,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         int ln = 1;
         for (int i = 0; i < this.text.length(); i++) {
             char ch = this.text.charAt(i);
-            if (col * 10 + 5 > this.width - 30) {
+            if (col * 10 + 5 > this.width - 10) {
                 col = 0;
                 ln++;
             }

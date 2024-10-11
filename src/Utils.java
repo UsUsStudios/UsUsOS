@@ -33,4 +33,9 @@ public class Utils {
         map = (HashMap<String, String>) ois.readObject();
         return map;
     }
+
+    public static boolean checkJAR() {
+        String location = Computer.class.getResource("Computer.class").toString();
+        return location.startsWith("jar:");
+    }
 }
