@@ -11,18 +11,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class Computer {
-    public static JFrame init() throws IOException, ClassNotFoundException {
+    public static void boot() throws IOException, ClassNotFoundException {
         JFrame frame = new JFrame("UsUsOS");
         frame.setVisible(true);
         frame.setSize(830, 830);
@@ -35,13 +32,11 @@ public class Computer {
 
         os.requestFocus();
         os.startUp();
-
-        return frame;
     }
 
     public static boolean checkVersionNumber() throws FileNotFoundException {
         String versionNumber;
-        try (Scanner reader = new Scanner(new File(Utils.getPath("version.txt")))) {
+        try (Scanner reader = new Scanner(new File(Utils.getPath("version.usus")))) {
             versionNumber = reader.next() + "\n";
         }
 
@@ -58,7 +53,7 @@ public class Computer {
         oos.flush();
         
         // Write to file
-        try (FileWriter writer = new FileWriter(Utils.getPath("storage.txt"))) {
+        try (FileWriter writer = new FileWriter(Utils.getPath("storage.usus"))) {
             byte[] byteArray = bos.toByteArray();
             writer.write(Base64.getEncoder().encodeToString(byteArray));
         }
@@ -66,7 +61,7 @@ public class Computer {
 
     public static Directory loadDir() throws IOException, ClassNotFoundException {
         // Read File
-        File file = new File(Utils.getPath("storage.txt"));
+        File file = new File(Utils.getPath("storage.usus"));
         String storageString;
         try (Scanner reader = new Scanner(file)) {
             storageString = "";
@@ -156,6 +151,8 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         echo("Hello, " + userData.get("Username") + ".");
                         String password = getUserInput("\nPlease enter your password: ");
                         while (!userData.get("Password").equals(password)) {
+                            System.out.println(userData.get("Password"));
+                            System.out.println(password);
                             password = getUserInput("\nIncorrect password. Please enter your password: ");
                         }
                         echo("\nYou have succesfully signed in. Entering desktop mode...");
