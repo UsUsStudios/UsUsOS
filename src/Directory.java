@@ -16,28 +16,20 @@ public class Directory implements Serializable {
         }
     }
 
-    public Directory getDir(String name) {
+    public Object getFromName(String name) {
         for (Object object : dir) {
             if (object instanceof Directory directory) {
                 if (directory.dirName.equals(name)) {
                     return directory;
                 }
-            }
-        }
-
-        return new Directory("null");
-    }
-
-    public ComFile getFile(String name) {
-        for (Object object : dir) {
-            if (object instanceof ComFile file) {
-                if ((file.fileName + "." + file.fileExtension).equals(name)) {
-                    return file;
+            } else if (object instanceof ComFile comfile) {
+                if ((comfile.fileName + "." + comfile.fileExtension).equals(name)) {
+                    return comfile;
                 }
             }
         }
 
-        return new ComFile("null", "null", new ArrayList<>());
+        throw new RuntimeException("Directory/File '" + name + "' is not available");
     }
 
     @Override
@@ -51,5 +43,25 @@ public class Directory implements Serializable {
 
     public boolean isNullDir() {
         return this.dir.isEmpty() && this.dirName.equals("null");
+    }
+
+    public Directory getDirFromPath(String path) {
+        String[] parts = path.split("/");
+        Object lastDirObject = this;
+        for (String part : parts) {
+            lastDirObject = ((Directory) lastDirObject).getFromName(part);
+        }
+
+        return (Directory) lastDirObject;
+    }
+
+    public ComFile getFileFromPath(String path) {
+        String[] parts = path.split("/");
+        Object lastDirObject = this;
+        for (String part : parts) {
+            lastDirObject = ((Directory) lastDirObject).getFromName(part);
+        }
+
+        return (ComFile) lastDirObject;
     }
 }

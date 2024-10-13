@@ -4,9 +4,9 @@ import java.util.ArrayList;
 public class ComFile implements Serializable {
     String fileName;
     String fileExtension;
-    ArrayList<Byte> data;
+    byte[] data;
 
-    ComFile(String fileName, String fileExtension, ArrayList<Byte> data) {
+    ComFile(String fileName, String fileExtension, byte[] data) {
         this.fileName = fileName;
         this.fileExtension = fileExtension;
         this.data = data;
@@ -17,7 +17,7 @@ public class ComFile implements Serializable {
         return this.fileName + "." + this.fileExtension;
     }
 
-    public ArrayList<Byte> getData() {
+    public byte[] getData() {
         return data;
     }
 }

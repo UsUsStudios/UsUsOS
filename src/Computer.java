@@ -11,7 +11,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -93,6 +92,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
     boolean isLatestVersion;
     Directory mainDir;
     int mode;
+    ArrayList<Script> scripts;
 
     OS(int width, int height, JFrame frame) throws IOException, ClassNotFoundException {
         frame.add(this);
@@ -105,6 +105,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         this.submittedText = "";
         this.isAccepting = false;
         this.mode = 0;
+        this.scripts = new ArrayList<>();
         
         new Timer(100, (ActionEvent e) -> {
             repaint();
@@ -137,28 +138,26 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         userData.put("Username", getUserInput("\nEnter your username: "));
                         userData.put("Password", getUserInput("\nEnter your password: "));
                         echo("\nSetting up your storage. Please wait a moment.");
-                        ArrayList<Byte> userDataBytes = Utils.mapToByteArray(userData);
-                        this.mainDir.add(new ComFile("userdata", "sys", userDataBytes));
-                        Computer.saveDir(mainDir);
+                        byte[] userDataBytes = Utils.mapToByteArray(userData);
+                        setupStorage(userDataBytes);
                         getUserInput("\nStorage complete! Press enter to continue to home screen.");
                         this.mode = 1;
                     } catch (IOException ex) {
-                        echo("\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + ex.getMessage());
+                        echo("\nAn error occurred. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + ex.getMessage() + Arrays.toString(ex.getStackTrace()));
                     }
                 } else {
                     try {
-                        HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFile("userdata.sys").data);
+                        HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFileFromPath("UsUsOS/userdata.sys").data);
                         echo("Hello, " + userData.get("Username") + ".");
                         String password = getUserInput("\nPlease enter your password: ");
                         while (!userData.get("Password").equals(password)) {
-                            System.out.println(userData.get("Password"));
-                            System.out.println(password);
                             password = getUserInput("\nIncorrect password. Please enter your password: ");
                         }
-                        echo("\nYou have succesfully signed in. Entering desktop mode...");
+                        echo("\nYou have successfully signed in. Entering desktop mode...");
                         this.mode = 1;
+                        runScript("UsUsOS/testExe.exe");
                     } catch (IOException | ClassNotFoundException e) {
-                        echo(e.getMessage() + "\nAn error occured. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: ");
+                        echo("\nAn error occurred. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + e.toString() + Arrays.toString(e.getStackTrace()));
                     }
                 }
             }).start();
@@ -190,7 +189,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
     public void draw(Graphics g) {
         switch (this.mode) {
             case 0 -> drawCommandPrompt(g);
-            case 1 -> drawDeskop(g);
+            case 1 -> drawDesktop(g);
         }
     }
 
@@ -198,13 +197,13 @@ class OS extends JPanel implements ActionListener, KeyListener {
         if (keyCode == KeyEvent.VK_BACK_SPACE) {
             try {
                 this.submittedText = this.submittedText.substring(0, this.submittedText.length() - 2);
-            } catch (StringIndexOutOfBoundsException e) {}
+            } catch (StringIndexOutOfBoundsException _) {}
         }
     }
 
     private void drawCommandPrompt(Graphics g) {
         g.setColor(Color.WHITE);
-        Font font = new Font("Monospaced", 1, 16);
+        Font font = new Font("Monospaced", Font.BOLD, 16);
         g.setFont(font);
         int col = 0;
         int ln = 1;
@@ -219,29 +218,50 @@ class OS extends JPanel implements ActionListener, KeyListener {
                 g.drawString(String.valueOf(ch), col * 10 + 5, ln * 20);
                 col++;
             } else {
-                switch (ch) {
-                    case '\n' -> {
-                        if (i == textToPrint.length() - 1) {
-                            this.isAccepting = false;
-                        } else {
-                            col = 0;
-                            ln++;
-                        }
+                if (ch == '\n') {
+                    if (i == textToPrint.length() - 1) {
+                        this.isAccepting = false;
+                    } else {
+                        col = 0;
+                        ln++;
                     }
-                    default -> {
-                    }
-                        
                 }
             }
         }
     }
 
-    private static void drawDeskop(Graphics g) {
+    private void drawDesktop(Graphics g) {
         try {
-        File backgroundImg = new File(Utils.getPath("background.png"));
-        Image img = ImageIO.read(backgroundImg).getScaledInstance(1200, 830, Image.SCALE_DEFAULT);
-        g.drawImage(img, -300, 0, null);
-        } catch (IOException e) {}
+            File backgroundImg = new File(Utils.getPath("background.png"));
+            Image img = ImageIO.read(backgroundImg).getScaledInstance(1200, 830, Image.SCALE_DEFAULT);
+            g.drawImage(img, -300, 0, null);
+        } catch (IOException _) {}
+    }
+
+    private void setupStorage(byte[] userData) throws IOException {
+        Directory OSDir = new Directory("UsUsOS");
+        OSDir.add(new ComFile("userdata", "sys", userData));
+
+        File file = new File(Utils.getPath("testExe.txt"));
+        String testExeString;
+        try (Scanner reader = new Scanner(file)) {
+            testExeString = "";
+            while (reader.hasNextLine()) {
+                testExeString += reader.nextLine() + "\n";
+            }
+        }
+
+        OSDir.add(new ComFile("testExe", "exe", testExeString.getBytes()));
+
+        this.mainDir.add(OSDir);
+        Computer.saveDir(this.mainDir);
+    }
+
+    private void runScript(String path) {
+        byte[] scriptData = this.mainDir.getFileFromPath(path).data;
+        Script script = new Script(scriptData);
+        this.scripts.add(script);
+        script.run();
     }
 
     @Override

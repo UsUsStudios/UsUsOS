@@ -8,26 +8,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Utils {
-    public static ArrayList<Byte> mapToByteArray(Map<String, String> map) throws IOException{
+    public static byte[] mapToByteArray(Map<String, String> map) throws IOException{
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(bos)) {
             oos.writeObject(map);
         }
-        byte[] bytes = bos.toByteArray();
-        ArrayList<Byte> byteArray = new ArrayList<>();
-        for (byte b : bytes) {
-            byteArray.add(b);
-        }
-        return byteArray;
+        return bos.toByteArray();
     }
 
     @SuppressWarnings("unchecked")
-    public static HashMap<String, String> byteArrayToMap(ArrayList<Byte> byteArray) throws IOException, ClassNotFoundException {
-        byte[] bytes = new byte[byteArray.size()];
-        for (int i = 0; i < byteArray.size(); i++) {
-            bytes[i] = byteArray.get(i);
-        }
-        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+    public static HashMap<String, String> byteArrayToMap(byte[] byteArray) throws IOException, ClassNotFoundException {
+        ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
         HashMap<String, String> map;
         ObjectInputStream ois = new ObjectInputStream(bis);
         map = (HashMap<String, String>) ois.readObject();
