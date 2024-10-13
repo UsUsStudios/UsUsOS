@@ -4,7 +4,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class VersionFetcher {
-
+    // Fetches the version number from GitHub
     public static String getVersionNumber() {
         String owner = "UsUsStudios";
         String repo = "UsUsOS";
@@ -21,6 +21,7 @@ public class VersionFetcher {
         return versionNumber;
     }
 
+    // Sends a request to GitHub
     private static String getFileContent(String owner, String repo, String path) throws Exception {
         String url = "https://api.github.com/repos/" + owner + "/" + repo + "/contents/" + path;
 

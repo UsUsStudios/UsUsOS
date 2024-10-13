@@ -18,6 +18,7 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 public class Computer {
+    // Sets up the frame and boots the OS
     public static void boot() throws IOException, ClassNotFoundException {
         JFrame frame = new JFrame("UsUsOS");
         frame.setVisible(true);
@@ -33,6 +34,7 @@ public class Computer {
         os.startUp();
     }
 
+    // Sends a request to version.usus and to version.usus on GitHub and compares them
     public static boolean checkVersionNumber() throws FileNotFoundException {
         String versionNumber;
         try (Scanner reader = new Scanner(new File(Utils.getPath("version.usus")))) {
@@ -43,7 +45,8 @@ public class Computer {
 
        return (versionNumber.equals(cloudVersionNumber));
     }
-    
+
+    // Serializes and writes the inputted Directory to storage.usus
     public static void saveDir(Directory mainDir) throws IOException {
         // Serialize
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -58,6 +61,7 @@ public class Computer {
         }
     }
 
+    // Reads and deserializes storage.usus into a Directory instance
     public static Directory loadDir() throws IOException, ClassNotFoundException {
         // Read File
         File file = new File(Utils.getPath("storage.usus"));
@@ -94,6 +98,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
     int mode;
     ArrayList<Script> scripts;
 
+    // Sets up the OS
     OS(int width, int height, JFrame frame) throws IOException, ClassNotFoundException {
         frame.add(this);
         this.width = width;
@@ -128,10 +133,12 @@ class OS extends JPanel implements ActionListener, KeyListener {
         });
     }
 
+    // Checks the storage, version and does the command prompt sign-in/sign up
     public void startUp() throws IOException, ClassNotFoundException {
         if (this.isLatestVersion) {
             new Thread(() -> {
                 if (this.mainDir.isNullDir() || this.mainDir.isEmpty()) {
+                    // Sign up
                     try {
                         echo("Welcome to UsUsOS! Let's get you set up.");
                         Map<String, String> userData = new HashMap<>();
@@ -147,6 +154,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
                     }
                 } else {
                     try {
+                        // Sign-in
                         HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFileFromPath("UsUsOS/userdata.sys").data);
                         echo("Hello, " + userData.get("Username") + ".");
                         String password = getUserInput("\nPlease enter your password: ");
@@ -163,6 +171,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
             }).start();
         } else {
             new Thread(() -> {
+                // New version available
                 echo("There is a new version of UsUsOS available. Please download at https://github.com/UsUsStudios/UsUsOS.");
                 if (Desktop.isDesktopSupported()) {
                     try {
@@ -186,6 +195,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         draw(g);
     }
 
+    // Checks mode (command prompt/desktop)
     public void draw(Graphics g) {
         switch (this.mode) {
             case 0 -> drawCommandPrompt(g);
@@ -193,6 +203,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         }
     }
 
+    // Processes key presses, other than writing the letter to the command prompt
     private void processKey(int keyCode) {
         if (keyCode == KeyEvent.VK_BACK_SPACE) {
             try {
@@ -201,6 +212,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         }
     }
 
+    // Draws the command prompt (all just text)
     private void drawCommandPrompt(Graphics g) {
         g.setColor(Color.WHITE);
         Font font = new Font("Monospaced", Font.BOLD, 16);
@@ -230,6 +242,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         }
     }
 
+    // Draws the desktop (background image, will add windows too)
     private void drawDesktop(Graphics g) {
         try {
             File backgroundImg = new File(Utils.getPath("background.png"));
@@ -238,6 +251,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         } catch (IOException _) {}
     }
 
+    // Sets up the storage (for now saves the user data)
     private void setupStorage(byte[] userData) throws IOException {
         Directory OSDir = new Directory("UsUsOS");
         OSDir.add(new ComFile("userdata", "sys", userData));
@@ -257,6 +271,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
         Computer.saveDir(this.mainDir);
     }
 
+    // Adds a script to the script list and runs it
     private void runScript(String path) {
         byte[] scriptData = this.mainDir.getFileFromPath(path).data;
         Script script = new Script(scriptData);
@@ -276,10 +291,12 @@ class OS extends JPanel implements ActionListener, KeyListener {
     @Override
     public void keyReleased(KeyEvent e) {}
 
+    // Checks if a character is printable (for the command prompt)
     public static boolean isPrintable(char ch) {
         return !Character.isISOControl(ch) && ch >= 32 && ch < 127;
     }
 
+    // Waits for the user to press enter, and returns what the user's input was
     public String getUserInput(String text) {
         this.text += text;
         this.isAccepting = true;

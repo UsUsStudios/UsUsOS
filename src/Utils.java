@@ -3,11 +3,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class Utils {
+    // Convert a map to a byte[]
     public static byte[] mapToByteArray(Map<String, String> map) throws IOException{
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (ObjectOutputStream oos = new ObjectOutputStream(bos)) {
@@ -16,6 +17,7 @@ public class Utils {
         return bos.toByteArray();
     }
 
+    // Convert a byte[] to a map
     @SuppressWarnings("unchecked")
     public static HashMap<String, String> byteArrayToMap(byte[] byteArray) throws IOException, ClassNotFoundException {
         ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
@@ -25,8 +27,9 @@ public class Utils {
         return map;
     }
 
+    // Get the path of a file in the ususos directory (not a easy as it sounds!)
     public static String getPath(String filename) {
-        String location = Computer.class.getResource("Computer.class").toString();
+        String location = Objects.requireNonNull(Computer.class.getResource("Computer.class")).toString();
         if (location.startsWith("jar:")) {
             return System.getProperty("user.dir") + "\\" + filename;
         }
