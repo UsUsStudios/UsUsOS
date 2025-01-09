@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class ComFile implements Serializable {
     String fileName;

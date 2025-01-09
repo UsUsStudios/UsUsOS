@@ -1,3 +1,2 @@
-hi here dummies!
-efjf
-eufhdy
+print(hi);
+print(hello);

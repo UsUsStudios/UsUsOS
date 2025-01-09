@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -13,28 +14,29 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.Timer;
 
 public class Computer {
     // Sets up the frame and boots the OS
     public static void boot() throws IOException, ClassNotFoundException {
         JFrame frame = new JFrame("UsUsOS");
-        frame.setVisible(true);
-        frame.setSize(830, 830);
+        frame.setSize(1300, 800);
         frame.setLocationRelativeTo(null);
         frame.setResizable(false);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setIconImage(new ImageIcon(Utils.getPath("icon.png")).getImage());
 
-        OS os = new OS(830, 830, frame);
+
+        frame.setVisible(true);
+        OS os = new OS(1300, 790, frame);
         frame.pack();
 
         os.requestFocus();
         os.startUp();
     }
 
-    // Sends a request to version.usus and to version.usus on GitHub and compares them
+    // Sends a request to the local version.usus and to version.usus on GitHub and compares them
     public static boolean checkVersionNumber() throws FileNotFoundException {
         String versionNumber;
         try (Scanner reader = new Scanner(new File(Utils.getPath("version.usus")))) {
@@ -97,6 +99,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
     Directory mainDir;
     int mode;
     ArrayList<Script> scripts;
+    ArrayList<UFrame> windows;
 
     // Sets up the OS
     OS(int width, int height, JFrame frame) throws IOException, ClassNotFoundException {
@@ -111,23 +114,25 @@ class OS extends JPanel implements ActionListener, KeyListener {
         this.isAccepting = false;
         this.mode = 0;
         this.scripts = new ArrayList<>();
-        
-        new Timer(100, (ActionEvent e) -> {
+
+        new Timer(0, (ActionEvent e) -> {
             repaint();
         }).start();
 
         this.text = "Checking version";
         this.isLatestVersion = Computer.checkVersionNumber();
-        this.text = "Loading storage";
+        this.text += "\nLoading storage";
         this.mainDir = Computer.loadDir();
         this.text = "";
+
+        this.windows = new ArrayList<>();
 
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
+                processKey(e.getKeyCode());
                 if (isAccepting) {
                     submittedText += e.getKeyChar();
-                    processKey(e.getKeyCode());
                 }
             }
         });
@@ -153,8 +158,8 @@ class OS extends JPanel implements ActionListener, KeyListener {
                         echo("\nAn error occurred. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + ex.getMessage() + Arrays.toString(ex.getStackTrace()));
                     }
                 } else {
+                    // Sign-in
                     try {
-                        // Sign-in
                         HashMap<String, String> userData = Utils.byteArrayToMap(this.mainDir.getFileFromPath("UsUsOS/userdata.sys").data);
                         echo("Hello, " + userData.get("Username") + ".");
                         String password = getUserInput("\nPlease enter your password: ");
@@ -162,16 +167,16 @@ class OS extends JPanel implements ActionListener, KeyListener {
                             password = getUserInput("\nIncorrect password. Please enter your password: ");
                         }
                         echo("\nYou have successfully signed in. Entering desktop mode...");
-                        this.mode = 1;
                         runScript("UsUsOS/testExe.exe");
+                        this.mode = 1;
                     } catch (IOException | ClassNotFoundException e) {
                         echo("\nAn error occurred. Please try again. If the error persists, please get help from the creator by creating an issue on the GitHub page.\nError: " + e.toString() + Arrays.toString(e.getStackTrace()));
                     }
                 }
             }).start();
         } else {
+            // New version available
             new Thread(() -> {
-                // New version available
                 echo("There is a new version of UsUsOS available. Please download at https://github.com/UsUsStudios/UsUsOS.");
                 if (Desktop.isDesktopSupported()) {
                     try {
@@ -209,6 +214,8 @@ class OS extends JPanel implements ActionListener, KeyListener {
             try {
                 this.submittedText = this.submittedText.substring(0, this.submittedText.length() - 2);
             } catch (StringIndexOutOfBoundsException _) {}
+        } else if (keyCode == KeyEvent.VK_0) {
+            runScript("UsUsOS/testExe.exe");
         }
     }
 
@@ -245,14 +252,21 @@ class OS extends JPanel implements ActionListener, KeyListener {
     // Draws the desktop (background image, will add windows too)
     private void drawDesktop(Graphics g) {
         try {
-            File backgroundImg = new File(Utils.getPath("background.png"));
-            Image img = ImageIO.read(backgroundImg).getScaledInstance(1200, 830, Image.SCALE_DEFAULT);
-            g.drawImage(img, -300, 0, null);
+            File backgroundImg = new File(Utils.getPath("background.jpg"));
+            Image img = ImageIO.read(backgroundImg).getScaledInstance(1300, 800, Image.SCALE_DEFAULT);
+            g.drawImage(img, 0, 0, null);
+            System.out.println("Y");
+
+            for (UFrame frame : this.windows) {
+                if (frame.visible) {
+                    g.drawImage(frame.image, frame.screenX, frame.screenY, null);
+                }
+            }
         } catch (IOException _) {}
     }
 
     // Sets up the storage (for now saves the user data)
-    private void setupStorage(byte[] userData) throws IOException {
+    public void setupStorage(byte[] userData) throws IOException {
         Directory OSDir = new Directory("UsUsOS");
         OSDir.add(new ComFile("userdata", "sys", userData));
 
@@ -274,7 +288,7 @@ class OS extends JPanel implements ActionListener, KeyListener {
     // Adds a script to the script list and runs it
     private void runScript(String path) {
         byte[] scriptData = this.mainDir.getFileFromPath(path).data;
-        Script script = new Script(scriptData);
+        Script script = new Script(scriptData, this);
         this.scripts.add(script);
         script.run();
     }
