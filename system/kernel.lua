@@ -1,4 +1,4 @@
-print("Hello, World!")
+_G.screen.set()
 
 while true do
 end
