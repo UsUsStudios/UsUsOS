@@ -12,18 +12,30 @@ function _G.include(path, env)
 	return f
 end
 
+local i = 1
+
 include("scheduler.lua")()
 
-local gettime = chip.getUnixTime
+scheduler.new_process(function()
+	while true do
+		i = i * 325 ^ 0.326825
+	end
+end)
+
+scheduler.new_process(function()
+	while true do
+		i = i / 43 ^ 4 + 5
+	end
+end)
+
+local gettime = chip.getTime
 local loads = scheduler.loads
-local last_time
-local start
 
 while true do
-	last_time = gettime()
+	local last_time = gettime()
 
 	scheduler.tick()
-	start = gettime()
+	local start = gettime()
 	local ticking_time = gettime() - last_time
 	scheduler.cpu_load = ticking_time / scheduler.time_period * 100
 
@@ -33,5 +45,5 @@ while true do
 			coroutine.yield()
 		end
 	end
-	loads.idle = gettime() - start
+	loads.idle = (gettime() - start) / scheduler.time_period * 100
 end
