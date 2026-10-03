@@ -27,9 +27,7 @@ function scheduler.new_process(fn, args)
 		pid = scheduler.pid_counter,
 		state = "ready", -- ready | running | zombie | dead
 		exit_code = nil,
-		to_return = nil, -- return to the coroutine on next resume
-		errormsg = nil, -- human-readable error message to return to coroutine on next resume
-		errorcode = nil, -- comparable error code to return to coroutine on next resume
+		error = nil, -- the error that the process exited with
 		yields = 0, -- how many yields have been processed by the scheduler
 		utime = 0, -- how many seconds has the CPU spent running this process's code
 	}
@@ -73,14 +71,12 @@ function scheduler.tick()
 		if pcb and pcb.state == "ready" then
 			local start = gettime()
 			pcb.state = "running"
-			local ok, req = coroutine.resume(pcb.co, pcb.to_return, pcb.error)
+			local ok, err = coroutine.resume(pcb.co)
+			pcb.error = err
 
 			if pcb.state == "running" then -- if no system function changed its state
 				scheduler.queue(pcb)
 			end
-
-			pcb.error = nil
-			pcb.to_return = nil
 
 			if coroutine.status(pcb.co) == "dead" then
 				pcb.state = "zombie"
@@ -92,7 +88,7 @@ function scheduler.tick()
 				pcb.state = "zombie"
 				pcb.exit_code = -1
 
-				scheduler.dead(pcb, "uncaught error, ", req)
+				scheduler.dead(pcb, "uncaught error, ", err)
 			end
 
 			local utime = gettime() - start

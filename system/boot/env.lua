@@ -14,6 +14,20 @@ local function clone(t)
 	return copy
 end
 
+local function include(package)
+	local handle = files.open("system:/boot/env/" .. package .. ".lua")
+	local data = handle.read("a")
+	handle.close()
+	local f, err = load(data, "system:/boot/env/" .. package .. ".lua")
+	if err then
+		error(err)
+	end
+	if not f then
+		error("function is nil")
+	end
+	return f()
+end
+
 -- lua single-function builtins
 g._G = g
 g.pairs = pairs
@@ -48,5 +62,7 @@ g.string = clone(string)
 g.coroutine = clone(coroutine)
 
 g.CWD = ...
+
+g.sys = include("sys")
 
 return g

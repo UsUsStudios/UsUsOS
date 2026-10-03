@@ -1,5 +1,6 @@
 _G.screen.set()
-_G.ZEOS_VERSION = "v0.0.1"
+_G.OS_NAME = "ZeOS"
+_G.OS_VERSION = "v0.0.1"
 
 function _G.include(path, env)
 	local handle = files.open("system:/boot/" .. path)
@@ -50,15 +51,7 @@ while true do
 	local start = gettime()
 	local ticking_time = gettime() - last_time
 	if pid1.state ~= "ready" then
-		panic(
-			"PID 1 is dead",
-			"exit code: "
-				.. tostring(pid1.exit_code)
-				.. "\nerror code: "
-				.. tostring(pid1.error_code)
-				.. "\nerror message: "
-				.. tostring(pid1.error_msg)
-		)
+		panic("PID 1 is dead", "exit code: " .. tostring(pid1.exit_code) .. "\nerror: " .. tostring(pid1.error))
 	end
 	scheduler.cpu_load = ticking_time / scheduler.time_period * 100
 
