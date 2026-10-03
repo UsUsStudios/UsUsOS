@@ -1,8 +1,7 @@
 _G.scheduler = {}
 
+local syscalls = include("syscalls.lua")()
 local wrap_process = include("errors.lua")()
-
-local handle_syscall = nil
 
 scheduler.pid_counter = 0
 scheduler.processes = {}
@@ -18,8 +17,22 @@ function scheduler.queue(pcb)
 	table.insert(ready_queue, pcb.pid)
 end
 
+local function handle_syscall(pcb, request)
+	if not request or not request.call then
+		scheduler.queue(pcb)
+		return
+	end
+
+	local call = syscalls[request.call]
+	if call then
+		pcb.to_return = call(pcb, request)
+	else
+		scheduler.queue(pcb)
+	end
+end
+
 -- create a new process running the function fn with an optional parent pid and args
-function scheduler.new_process(fn, parent_pid, args)
+function scheduler.new_process(fn, args)
 	if fn == nil then
 		error("cannot start process with function nil")
 	end
@@ -27,12 +40,11 @@ function scheduler.new_process(fn, parent_pid, args)
 	scheduler.pid_counter = scheduler.pid_counter + 1
 	local pcb = {
 		pid = scheduler.pid_counter,
-		ppid = parent_pid,
 		state = "ready", -- ready | running | zombie | dead
 		exit_code = nil,
-		children = {},
 		to_return = nil, -- return to the coroutine on next resume
-		error = nil, -- error message to return to coroutine on next resume
+		errormsg = nil, -- human-readable error message to return to coroutine on next resume
+		errorcode = nil, -- comparable error code to return to coroutine on next resume
 		yields = 0, -- how many yields have been processed by the scheduler
 		utime = 0, -- how many seconds has the CPU spent running this process's code
 		stime = 0, -- how many seconds has the CPU spent running this process's syscalls
@@ -44,12 +56,9 @@ function scheduler.new_process(fn, parent_pid, args)
 		if coroutine.isyieldable() then
 			coroutine.yield()
 		end
-	end, "", 100000)
+	end, "", 1000)
 
 	scheduler.processes[pcb.pid] = pcb
-	if parent_pid and scheduler.processes[parent_pid] then
-		table.insert(scheduler.processes[parent_pid].children, pcb.pid)
-	end
 	scheduler.queue(pcb)
 
 	return pcb
@@ -57,6 +66,9 @@ end
 
 -- sends some messages when a process dies
 function scheduler.dead(pcb, msg, req)
+	if not pcb.exit_code then
+		pcb.exit_code = -1
+	end
 	print("Process with PID " .. pcb.pid .. " ended with exit code " .. pcb.exit_code)
 	if type(req) ~= "table" and req then
 		print("    error of exit: " .. msg .. req)
@@ -86,7 +98,7 @@ function scheduler.tick()
 				pcb.state = "zombie"
 				pcb.exit_code = pcb.exit_code or 0
 
-				scheduler.dead(pcb, "coroutine found dead, ", req)
+				scheduler.dead(pcb, "coroutine found dead")
 			elseif not ok then
 				-- uncaught error
 				pcb.state = "zombie"
@@ -95,11 +107,9 @@ function scheduler.tick()
 				scheduler.dead(pcb, "uncaught error, ", req)
 			else
 				local syscall_ok, err = xpcall(handle_syscall, debug.traceback, pcb, req)
-				if not syscall_ok and err then
-					err = "syscall error: " .. err
-					pcb.error = err
+				if not syscall_ok then
+					panic("syscall error", err)
 				end
-				scheduler.queue(pcb)
 			end
 
 			local stime = gettime() - start - utime

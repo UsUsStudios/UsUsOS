@@ -12,24 +12,27 @@ function _G.include(path, env)
 	return f
 end
 
-local i = 1
+function _G.panic(cause, msg)
+	print()
+	print("####################################################")
+	print("################### KERNEL PANIC ###################")
+	print("####################################################")
+	print("Cause: " .. cause)
+	print(msg)
+	chip.shutdown()
+end
 
 include("scheduler.lua")()
 
 scheduler.new_process(function()
-	while true do
-		i = i * 325 ^ 0.326825
-	end
-end)
-
-scheduler.new_process(function()
-	while true do
-		i = i / 43 ^ 4 + 5
-	end
+	print("hello 1")
+	coroutine.yield({ call = "exit" })
+	print("hello 2")
 end)
 
 local gettime = chip.getTime
 local loads = scheduler.loads
+local pid1 = scheduler.processes[1]
 
 while true do
 	local last_time = gettime()
@@ -37,6 +40,17 @@ while true do
 	scheduler.tick()
 	local start = gettime()
 	local ticking_time = gettime() - last_time
+	if pid1.state ~= "ready" then
+		panic(
+			"PID 1 is dead",
+			"exit code: "
+				.. tostring(pid1.exit_code)
+				.. "\nerror code: "
+				.. tostring(pid1.error_code)
+				.. "\nerror message: "
+				.. tostring(pid1.error_msg)
+		)
+	end
 	scheduler.cpu_load = ticking_time / scheduler.time_period * 100
 
 	-- wait until the next tick is scheduled
