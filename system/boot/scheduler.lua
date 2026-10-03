@@ -47,7 +47,6 @@ function scheduler.new_process(fn, args)
 		errorcode = nil, -- comparable error code to return to coroutine on next resume
 		yields = 0, -- how many yields have been processed by the scheduler
 		utime = 0, -- how many seconds has the CPU spent running this process's code
-		stime = 0, -- how many seconds has the CPU spent running this process's syscalls
 	}
 	pcb.co = coroutine.create(function()
 		wrap_process(fn, pcb, table.unpack(args or {}))
@@ -56,7 +55,7 @@ function scheduler.new_process(fn, args)
 		if coroutine.isyieldable() then
 			coroutine.yield()
 		end
-	end, "", 1000)
+	end, "", 500)
 
 	scheduler.processes[pcb.pid] = pcb
 	scheduler.queue(pcb)
@@ -92,7 +91,6 @@ function scheduler.tick()
 			local ok, req = coroutine.resume(pcb.co, pcb.to_return, pcb.error)
 			pcb.error = nil
 			pcb.to_return = nil
-			local utime = gettime() - start
 
 			if coroutine.status(pcb.co) == "dead" then
 				pcb.state = "zombie"
@@ -105,20 +103,11 @@ function scheduler.tick()
 				pcb.exit_code = -1
 
 				scheduler.dead(pcb, "uncaught error, ", req)
-			else
-				local syscall_ok, err = xpcall(handle_syscall, debug.traceback, pcb, req)
-				if not syscall_ok then
-					panic("syscall error", err)
-				end
 			end
 
-			local stime = gettime() - start - utime
-
+			local utime = gettime() - start
 			pcb.utime = pcb.utime + utime
-			pcb.stime = pcb.stime + stime
-
-			scheduler.loads[pid .. "-utime"] = utime / scheduler.time_period * 100
-			scheduler.loads[pid .. "-stime"] = stime / scheduler.time_period * 100
+			scheduler.loads[pid] = utime / scheduler.time_period * 100
 		end
 	end
 end
