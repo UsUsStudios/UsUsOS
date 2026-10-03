@@ -23,11 +23,20 @@ function _G.panic(cause, msg)
 end
 
 include("scheduler.lua")()
+local generate_env = include("env.lua")
 
 scheduler.new_process(function()
-	print("hello 1")
-	coroutine.yield({ call = "exit" })
-	print("hello 2")
+	local handle = files.open("system:/init.lua")
+	local data = handle.read("a")
+	handle.close()
+	local f, err = load(data, "system:/init.lua", nil, generate_env("0:system:/"))
+	if err or not f then
+		panic("unable to open system:/init.lua", err)
+	end
+	scheduler.new_process(f)
+	while true do
+		coroutine.yield()
+	end
 end)
 
 local gettime = chip.getTime

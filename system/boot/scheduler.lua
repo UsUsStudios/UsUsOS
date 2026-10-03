@@ -1,6 +1,5 @@
 _G.scheduler = {}
 
-local syscalls = include("syscalls.lua")()
 local wrap_process = include("errors.lua")()
 
 scheduler.pid_counter = 0
@@ -15,20 +14,6 @@ local ready_queue = {} -- the list of pids that should be run next tick
 function scheduler.queue(pcb)
 	pcb.state = "ready"
 	table.insert(ready_queue, pcb.pid)
-end
-
-local function handle_syscall(pcb, request)
-	if not request or not request.call then
-		scheduler.queue(pcb)
-		return
-	end
-
-	local call = syscalls[request.call]
-	if call then
-		pcb.to_return = call(pcb, request)
-	else
-		scheduler.queue(pcb)
-	end
 end
 
 -- create a new process running the function fn with an optional parent pid and args
@@ -89,6 +74,11 @@ function scheduler.tick()
 			local start = gettime()
 			pcb.state = "running"
 			local ok, req = coroutine.resume(pcb.co, pcb.to_return, pcb.error)
+
+			if pcb.state == "running" then -- if no system function changed its state
+				scheduler.queue(pcb)
+			end
+
 			pcb.error = nil
 			pcb.to_return = nil
 
