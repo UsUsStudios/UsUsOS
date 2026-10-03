@@ -1,5 +1,5 @@
 _G.screen.set()
-_G.USUSOS_VERSION = "v0.0.1"
+_G.ZEOS_VERSION = "v0.0.1"
 
 function _G.include(path, env)
 	local handle = files.open("system:/boot/" .. path)
