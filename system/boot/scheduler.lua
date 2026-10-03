@@ -8,6 +8,7 @@ scheduler.time_period = 0.05 -- in seconds
 scheduler.cpu_load = 0 -- in a percentage
 scheduler.loads = {}
 scheduler.ticks = 0
+scheduler.running = nil -- the PCB of the process whose code is currently being run
 
 local ready_queue = {} -- the list of pids that should be run next tick
 
@@ -30,6 +31,7 @@ function scheduler.new_process(fn, args)
 		error = nil, -- the error that the process exited with
 		yields = 0, -- how many yields have been processed by the scheduler
 		utime = 0, -- how many seconds has the CPU spent running this process's code
+		event_queue = {}, -- per-process infinite event queue
 	}
 	pcb.co = coroutine.create(function()
 		wrap_process(fn, pcb, table.unpack(args or {}))
@@ -71,7 +73,9 @@ function scheduler.tick()
 		if pcb and pcb.state == "ready" then
 			local start = gettime()
 			pcb.state = "running"
+			scheduler.running = pcb
 			local ok, err = coroutine.resume(pcb.co)
+			scheduler.running = nil
 			pcb.error = err
 
 			if pcb.state == "running" then -- if no system function changed its state

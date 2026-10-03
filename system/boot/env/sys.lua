@@ -37,8 +37,8 @@ function sys.sleep(seconds)
 	if seconds < 0 then
 		return nil, "EINVAL", "cannot sleep for a negative amount of time"
 	end
-	local start = chip.getTime()
-	while start + seconds > chip.getTime() do
+	local endtime = chip.getTime() + seconds
+	while endtime > chip.getTime() do
 		coroutine.yield()
 	end
 end

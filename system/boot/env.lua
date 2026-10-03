@@ -18,7 +18,7 @@ local function include(package)
 	local handle = files.open("system:/boot/env/" .. package .. ".lua")
 	local data = handle.read("a")
 	handle.close()
-	local f, err = load(data, "system:/boot/env/" .. package .. ".lua")
+	local f, err = load(data, "system:/boot/env/" .. package .. ".lua", nil, _G)
 	if err then
 		error(err)
 	end
@@ -64,5 +64,6 @@ g.coroutine = clone(coroutine)
 g.CWD = ...
 
 g.sys = include("sys")
+g.event = include("event")
 
 return g
